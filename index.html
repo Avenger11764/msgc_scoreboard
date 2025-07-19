@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MSGC 3.0 Dual Tournament Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111827;
+            color: #F9FAFB;
+        }
+        .tab-button.active {
+            background-color: #3B82F6;
+            color: white;
+        }
+    </style>
+</head>
+<body class="text-gray-300">
+
+    <div class="container mx-auto p-4 md:p-8">
+        <h1 class="text-4xl font-bold text-white text-center mb-2">MSGC 3.0 Tournament</h1>
+        <p class="text-center text-gray-400 mb-8">A two-phase tournament: Teams and Individuals.</p>
+
+        <!-- Tabs -->
+        <div class="mb-8 border-b border-gray-700 flex justify-center">
+            <button class="tab-button text-lg font-semibold py-3 px-6 text-gray-400 hover:text-white transition-colors active" data-tab="team-standings">Team Standings</button>
+            <button class="tab-button text-lg font-semibold py-3 px-6 text-gray-400 hover:text-white transition-colors" data-tab="individual-standings">Individual Standings</button>
+            <button class="tab-button text-lg font-semibold py-3 px-6 text-gray-400 hover:text-white transition-colors flex items-center gap-2" data-tab="admin-panel">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-lock-fill" viewBox="0 0 16 16">
+                    <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/>
+                </svg>
+                Admin Panel
+            </button>
+        </div>
+
+        <!-- Content Panels -->
+        <div id="content-panels">
+            <!-- Team Standings Section -->
+            <section id="team-standings" class="tab-content">
+                 <h2 class="text-3xl font-bold text-white text-center mb-6">Team Standings</h2>
+                <div class="max-w-4xl mx-auto bg-gray-900/50 rounded-lg border border-gray-700 p-4">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="border-b border-gray-700">
+                                <th class="p-3">Rank</th>
+                                <th class="p-3">Team</th>
+                                <th class="p-3 font-bold">Score</th>
+                            </tr>
+                        </thead>
+                        <tbody id="team-standings-body">
+                            <!-- Rows will be generated here by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Individual Standings Section -->
+            <section id="individual-standings" class="tab-content hidden">
+                <h2 class="text-3xl font-bold text-white text-center mb-6">Individual Standings</h2>
+                <div class="max-w-4xl mx-auto bg-gray-900/50 rounded-lg border border-gray-700 p-4">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="border-b border-gray-700">
+                                <th class="p-3">Rank</th>
+                                <th class="p-3">Player</th>
+                                <th class="p-3 font-bold">Score</th>
+                            </tr>
+                        </thead>
+                        <tbody id="individual-standings-body">
+                            <!-- Rows will be generated here by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Admin Panel Section -->
+            <section id="admin-panel" class="tab-content hidden">
+                <div class="max-w-4xl mx-auto bg-gray-800 p-6 rounded-lg border border-gray-700">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold text-white">Admin Panel</h2>
+                        <button id="reset-button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg text-sm transition-colors">Reset All Data</button>
+                    </div>
+                    
+                    <h3 class="text-xl font-bold text-white border-b border-gray-600 pb-2 mb-4">Team Score Updater</h3>
+                    <div id="team-admin-forms" class="space-y-6 mb-8"></div>
+
+                    <h3 class="text-xl font-bold text-white border-b border-gray-600 pb-2 mb-4 mt-10">Individual Score Updater</h3>
+                    <div id="individual-admin-forms" class="space-y-6"></div>
+
+                    <button id="update-button" class="mt-8 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-colors">
+                        Update All Scores
+                    </button>
+                    <div id="save-confirm" class="text-center mt-4 text-green-400 opacity-0 transition-opacity">Data Saved!</div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Password Modal -->
+    <div id="password-modal" class="fixed inset-0 bg-gray-900/80 backdrop-blur-sm flex items-center justify-center hidden z-50">
+        <div class="bg-gray-800 rounded-lg p-8 shadow-xl w-full max-w-sm">
+            <h3 class="text-xl font-bold text-white mb-4">Admin Access Required</h3>
+            <p class="text-gray-400 mb-6">Please enter the password to access the admin panel.</p>
+            <input type="password" id="password-input" class="w-full bg-gray-700 rounded p-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <p id="password-error" class="text-red-400 text-sm mt-2 hidden">Incorrect password. Please try again.</p>
+            <div class="mt-6 flex justify-end gap-4">
+                <button id="password-cancel" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">Cancel</button>
+                <button id="password-submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">Submit</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // ===================================================================================
+        // ===== PASTE YOUR FIREBASE CONFIG HERE ===========================================
+        // ===================================================================================
+        // Replace this object with the firebaseConfig object from your Firebase project
+        const firebaseConfig = {
+  apiKey: "AIzaSyBQcjoCkbKljPFDsXrJcA12-Xym4G4Ntts",
+  authDomain: "msgc3-scoreboard.firebaseapp.com",
+  projectId: "msgc3-scoreboard",
+  storageBucket: "msgc3-scoreboard.firebasestorage.app",
+  messagingSenderId: "1027426979843",
+  appId: "1:1027426979843:web:caadeb0a8204a987017e36",
+  measurementId: "G-PV2EKKDN7K"
+};
+        // ===================================================================================
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const tournamentDocRef = doc(db, "tournamentData", "main");
+
+        // ===== ADMIN PASSWORD (CHANGE THIS) =====
+        const ADMIN_PASSWORD = "msgc_admin_2025";
+
+        // ===== INITIAL TOURNAMENT DATA (Only used if no data exists in Firebase) =====
+        const initialTournamentData = {
+            players: ["Viper", "Phoenix", "Jett", "Sova", "Cypher", "Reyna", "Omen", "Sage"],
+            teams: [
+                { name: "Alpha Squad", members: ["Viper", "Phoenix"] },
+                { name: "Bravo Team", members: ["Jett", "Sova"] },
+                { name: "Charlie Co.", members: ["Cypher", "Reyna"] },
+                { name: "Delta Force", members: ["Omen", "Sage"] }
+            ],
+            teamTournament: {
+                standings: [
+                    { name: "Alpha Squad", score: 0 }, { name: "Bravo Team", score: 0 },
+                    { name: "Charlie Co.", score: 0 }, { name: "Delta Force", score: 0 }
+                ]
+            },
+            individualTournament: {
+                standings: [
+                    { player: "Viper", score: 0 }, { player: "Phoenix", score: 0 },
+                    { player: "Jett", score: 0 }, { player: "Sova", score: 0 },
+                    { player: "Cypher", score: 0 }, { player: "Reyna", score: 0 },
+                    { player: "Omen", score: 0 }, { player: "Sage", score: 0 }
+                ]
+            }
+        };
+
+        // --- CORE SCRIPT (DO NOT EDIT BELOW THIS LINE) ---
+        let tournamentData;
+        let isAdminAuthenticated = false;
+
+        const contentPanels = {
+            'team-standings': document.getElementById('team-standings'),
+            'individual-standings': document.getElementById('individual-standings'),
+            'admin-panel': document.getElementById('admin-panel')
+        };
+        const teamStandingsBody = document.getElementById('team-standings-body');
+        const individualStandingsBody = document.getElementById('individual-standings-body');
+        const adminForms = {
+            team: document.getElementById('team-admin-forms'),
+            individual: document.getElementById('individual-admin-forms')
+        };
+        const updateButton = document.getElementById('update-button');
+        const resetButton = document.getElementById('reset-button');
+        const saveConfirm = document.getElementById('save-confirm');
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const passwordModal = document.getElementById('password-modal');
+        const passwordInput = document.getElementById('password-input');
+        const passwordError = document.getElementById('password-error');
+        const passwordSubmit = document.getElementById('password-submit');
+        const passwordCancel = document.getElementById('password-cancel');
+
+        function renderTeamStandings() {
+            if (!tournamentData) return;
+            teamStandingsBody.innerHTML = '';
+            const standings = [...tournamentData.teamTournament.standings].sort((a, b) => b.score - a.score);
+            standings.forEach((stat, index) => {
+                const row = document.createElement('tr');
+                row.className = 'border-b border-gray-800 last:border-b-0';
+                row.innerHTML = `<td class="p-3 font-bold">${index + 1}</td><td class="p-3 font-semibold text-white">${stat.name}</td><td class="p-3 font-bold text-blue-400">${stat.score}</td>`;
+                teamStandingsBody.appendChild(row);
+            });
+        }
+
+        function renderIndividualStandings() {
+            if (!tournamentData) return;
+            individualStandingsBody.innerHTML = '';
+            const standings = [...tournamentData.individualTournament.standings].sort((a, b) => b.score - a.score);
+            standings.forEach((stat, index) => {
+                const row = document.createElement('tr');
+                row.className = 'border-b border-gray-800 last:border-b-0';
+                row.innerHTML = `<td class="p-3 font-bold">${index + 1}</td><td class="p-3 font-semibold text-white">${stat.player}</td><td class="p-3 font-bold text-blue-400">${stat.score}</td>`;
+                individualStandingsBody.appendChild(row);
+            });
+        }
+        
+        function renderTeamAdminPanel() {
+            if (!tournamentData) return;
+            const formContainer = adminForms.team;
+            const standings = tournamentData.teamTournament.standings;
+            formContainer.innerHTML = '';
+            standings.forEach((stat, teamIndex) => {
+                const formDiv = document.createElement('div');
+                formDiv.className = "grid grid-cols-2 items-center gap-4";
+                formDiv.innerHTML = `<div class="text-lg font-semibold text-white">${stat.name}</div><div class="text-center"><label class="text-sm text-gray-400">Score</label><input type="number" value="${stat.score}" class="team-stat-input w-full bg-gray-700 rounded p-2 text-center" data-team-index="${teamIndex}"></div>`;
+                formContainer.appendChild(formDiv);
+            });
+        }
+
+        function renderIndividualAdminPanel() {
+            if (!tournamentData) return;
+            const formContainer = adminForms.individual;
+            const standings = tournamentData.individualTournament.standings;
+            formContainer.innerHTML = '';
+            standings.forEach((stat, playerIndex) => {
+                const formDiv = document.createElement('div');
+                formDiv.className = "grid grid-cols-2 items-center gap-4";
+                formDiv.innerHTML = `<div class="text-lg font-semibold text-white">${stat.player}</div><div class="text-center"><label class="text-sm text-gray-400">Score</label><input type="number" value="${stat.score}" class="stat-input w-full bg-gray-700 rounded p-2 text-center" data-player-index="${playerIndex}"></div>`;
+                formContainer.appendChild(formDiv);
+            });
+        }
+
+        async function updateAndSave() {
+            const newTeamStandings = tournamentData.teamTournament.standings.map((team, index) => {
+                const input = document.querySelector(`.team-stat-input[data-team-index="${index}"]`);
+                return { ...team, score: parseInt(input.value) || 0 };
+            });
+
+            const newIndividualStandings = tournamentData.individualTournament.standings.map((player, index) => {
+                const input = document.querySelector(`.stat-input[data-player-index="${index}"]`);
+                return { ...player, score: parseInt(input.value) || 0 };
+            });
+
+            const updatedData = {
+                ...tournamentData,
+                teamTournament: { standings: newTeamStandings },
+                individualTournament: { standings: newIndividualStandings }
+            };
+            
+            await setDoc(tournamentDocRef, updatedData);
+            
+            saveConfirm.classList.remove('opacity-0');
+            setTimeout(() => saveConfirm.classList.add('opacity-0'), 2000);
+        }
+
+        async function resetData() {
+            if (window.confirm("Are you sure you want to reset ALL scores and team data? This will affect everyone.")) {
+                await setDoc(tournamentDocRef, initialTournamentData);
+                isAdminAuthenticated = false;
+                switchTab('team-standings');
+            }
+        }
+
+        function renderAll() {
+            renderTeamStandings();
+            renderIndividualStandings();
+            renderTeamAdminPanel();
+            renderIndividualAdminPanel();
+        }
+
+        function switchTab(tabId) {
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
+            Object.values(contentPanels).forEach(panel => panel.classList.add('hidden'));
+            contentPanels[tabId].classList.remove('hidden');
+        }
+
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const tabId = button.dataset.tab;
+                if (tabId === 'admin-panel') {
+                    if (!isAdminAuthenticated) {
+                        passwordModal.classList.remove('hidden');
+                        passwordInput.focus();
+                    } else {
+                        switchTab(tabId);
+                    }
+                } else {
+                    switchTab(tabId);
+                }
+            });
+        });
+
+        passwordSubmit.addEventListener('click', () => {
+            if (passwordInput.value === ADMIN_PASSWORD) {
+                isAdminAuthenticated = true;
+                passwordModal.classList.add('hidden');
+                passwordInput.value = '';
+                passwordError.classList.add('hidden');
+                switchTab('admin-panel');
+            } else {
+                passwordError.classList.remove('hidden');
+                passwordInput.value = '';
+            }
+        });
+        
+        passwordInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') passwordSubmit.click();
+        });
+
+        passwordCancel.addEventListener('click', () => {
+            passwordModal.classList.add('hidden');
+            passwordInput.value = '';
+            passwordError.classList.add('hidden');
+        });
+
+        updateButton.addEventListener('click', updateAndSave);
+        resetButton.addEventListener('click', resetData);
+
+        // --- Initial Load and Real-time Listener ---
+        onSnapshot(tournamentDocRef, (doc) => {
+            if (doc.exists()) {
+                tournamentData = doc.data();
+            } else {
+                // If no data, create it with initial data
+                setDoc(tournamentDocRef, initialTournamentData);
+                tournamentData = initialTournamentData;
+            }
+            renderAll();
+        });
+    </script>
+</body>
+</html>
