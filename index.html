@@ -50,6 +50,10 @@
             transform: translateY(-2px);
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         }
+        /* Rank Colors */
+        .rank-1 { color: #FFD700; text-shadow: 0 0 4px #FFD700; }
+        .rank-2 { color: #C0C0C0; text-shadow: 0 0 4px #C0C0C0; }
+        .rank-3 { color: #CD7F32; text-shadow: 0 0 4px #CD7F32; }
     </style>
 </head>
 <body class="text-gray-300">
@@ -157,7 +161,7 @@
         // ===== PASTE YOUR FIREBASE CONFIG HERE ===========================================
         // ===================================================================================
         // Replace this object with the firebaseConfig object from your Firebase project
-        const firebaseConfig = {
+       const firebaseConfig = {
   apiKey: "AIzaSyBQcjoCkbKljPFDsXrJcA12-Xym4G4Ntts",
   authDomain: "msgc3-scoreboard.firebaseapp.com",
   projectId: "msgc3-scoreboard",
@@ -226,11 +230,12 @@
         const passwordSubmit = document.getElementById('password-submit');
         const passwordCancel = document.getElementById('password-cancel');
 
-        function getRankIcon(rank) {
-            if (rank === 1) return '�';
-            if (rank === 2) return '🥈';
-            if (rank === 3) return '🥉';
-            return rank;
+        function getRankHTML(rank) {
+            let rankClass = "";
+            if (rank === 1) rankClass = "rank-1";
+            if (rank === 2) rankClass = "rank-2";
+            if (rank === 3) rankClass = "rank-3";
+            return `<span class="font-bold text-xl ${rankClass}">${rank}</span>`;
         }
 
         function renderTeamStandings() {
@@ -241,7 +246,7 @@
                 const rank = index + 1;
                 const row = document.createElement('tr');
                 row.className = 'border-b border-gray-800 last:border-b-0 table-row-hover';
-                row.innerHTML = `<td class="p-4 font-bold text-xl">${getRankIcon(rank)}</td><td class="p-4 text-lg font-bold text-white">${stat.name}</td><td class="p-4 text-lg font-extrabold text-blue-400">${stat.score}</td>`;
+                row.innerHTML = `<td class="p-4 w-16 text-center">${getRankHTML(rank)}</td><td class="p-4 text-lg font-bold text-white">${stat.name}</td><td class="p-4 text-lg font-extrabold text-blue-400">${stat.score}</td>`;
                 teamStandingsBody.appendChild(row);
             });
         }
@@ -254,7 +259,7 @@
                 const rank = index + 1;
                 const row = document.createElement('tr');
                 row.className = 'border-b border-gray-800 last:border-b-0 table-row-hover';
-                row.innerHTML = `<td class="p-4 font-bold text-xl">${getRankIcon(rank)}</td><td class="p-4 text-lg font-bold text-white">${stat.player}</td><td class="p-4 text-lg font-extrabold text-blue-400">${stat.score}</td>`;
+                row.innerHTML = `<td class="p-4 w-16 text-center">${getRankHTML(rank)}</td><td class="p-4 text-lg font-bold text-white">${stat.player}</td><td class="p-4 text-lg font-extrabold text-blue-400">${stat.score}</td>`;
                 individualStandingsBody.appendChild(row);
             });
         }
@@ -386,3 +391,4 @@
     </script>
 </body>
 </html>
+
