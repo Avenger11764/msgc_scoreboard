@@ -119,9 +119,15 @@
                 <div class="max-w-4xl mx-auto bg-gray-800 p-6 rounded-lg border border-gray-700">
                     <div class="flex justify-between items-center mb-6">
                         <h2 class="text-2xl font-bold text-white font-orbitron">Admin Panel</h2>
-                        <button id="reset-button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg text-sm transition-colors">Reset All Data</button>
+                        <button id="reset-button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg text-sm transition-colors">Reset Tournament</button>
                     </div>
                     
+                    <!-- Participant Management -->
+                    <div id="participant-management"></div>
+
+                    <hr class="border-gray-600 my-8">
+
+                    <!-- Score Updaters -->
                     <h3 class="text-xl font-bold text-white border-b border-gray-600 pb-2 mb-4 font-orbitron">Team Score Updater</h3>
                     <div id="team-admin-forms" class="space-y-6 mb-8"></div>
 
@@ -153,15 +159,13 @@
 
     <!-- Firebase SDK -->
     <script type="module">
-        // Import the functions you need from the SDKs you need
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // ===================================================================================
         // ===== PASTE YOUR FIREBASE CONFIG HERE ===========================================
         // ===================================================================================
-        // Replace this object with the firebaseConfig object from your Firebase project
-       const firebaseConfig = {
+        const firebaseConfig = {
   apiKey: "AIzaSyBQcjoCkbKljPFDsXrJcA12-Xym4G4Ntts",
   authDomain: "msgc3-scoreboard.firebaseapp.com",
   projectId: "msgc3-scoreboard",
@@ -172,40 +176,17 @@
 };
         // ===================================================================================
 
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const tournamentDocRef = doc(db, "tournamentData", "main");
 
-        // ===== ADMIN PASSWORD (CHANGE THIS) =====
         const ADMIN_PASSWORD = "msgc_admin_2025";
 
-        // ===== INITIAL TOURNAMENT DATA (Only used if no data exists in Firebase) =====
         const initialTournamentData = {
-            players: ["Viper", "Phoenix", "Jett", "Sova", "Cypher", "Reyna", "Omen", "Sage"],
-            teams: [
-                { name: "Alpha Squad", members: ["Viper", "Phoenix"] },
-                { name: "Bravo Team", members: ["Jett", "Sova"] },
-                { name: "Charlie Co.", members: ["Cypher", "Reyna"] },
-                { name: "Delta Force", members: ["Omen", "Sage"] }
-            ],
-            teamTournament: {
-                standings: [
-                    { name: "Alpha Squad", score: 0 }, { name: "Bravo Team", score: 0 },
-                    { name: "Charlie Co.", score: 0 }, { name: "Delta Force", score: 0 }
-                ]
-            },
-            individualTournament: {
-                standings: [
-                    { player: "Viper", score: 0 }, { player: "Phoenix", score: 0 },
-                    { player: "Jett", score: 0 }, { player: "Sova", score: 0 },
-                    { player: "Cypher", score: 0 }, { player: "Reyna", score: 0 },
-                    { player: "Omen", score: 0 }, { player: "Sage", score: 0 }
-                ]
-            }
+            teamTournament: { standings: [] },
+            individualTournament: { standings: [] }
         };
 
-        // --- CORE SCRIPT (DO NOT EDIT BELOW THIS LINE) ---
         let tournamentData;
         let isAdminAuthenticated = false;
 
@@ -216,6 +197,7 @@
         };
         const teamStandingsBody = document.getElementById('team-standings-body');
         const individualStandingsBody = document.getElementById('individual-standings-body');
+        const participantManagementContainer = document.getElementById('participant-management');
         const adminForms = {
             team: document.getElementById('team-admin-forms'),
             individual: document.getElementById('individual-admin-forms')
@@ -238,94 +220,130 @@
             return `<span class="font-bold text-xl ${rankClass}">${rank}</span>`;
         }
 
-        function renderTeamStandings() {
+        function renderAll() {
             if (!tournamentData) return;
-            teamStandingsBody.innerHTML = '';
-            const standings = [...tournamentData.teamTournament.standings].sort((a, b) => b.score - a.score);
-            standings.forEach((stat, index) => {
-                const rank = index + 1;
-                const row = document.createElement('tr');
-                row.className = 'border-b border-gray-800 last:border-b-0 table-row-hover';
-                row.innerHTML = `<td class="p-4 w-16 text-center">${getRankHTML(rank)}</td><td class="p-4 text-lg font-bold text-white">${stat.name}</td><td class="p-4 text-lg font-extrabold text-blue-400">${stat.score}</td>`;
-                teamStandingsBody.appendChild(row);
-            });
+            renderStandings('team');
+            renderStandings('individual');
+            renderAdminPanel();
         }
 
-        function renderIndividualStandings() {
-            if (!tournamentData) return;
-            individualStandingsBody.innerHTML = '';
-            const standings = [...tournamentData.individualTournament.standings].sort((a, b) => b.score - a.score);
+        function renderStandings(type) {
+            const body = type === 'team' ? teamStandingsBody : individualStandingsBody;
+            const standings = [...tournamentData[`${type}Tournament`].standings].sort((a, b) => b.score - a.score);
+            body.innerHTML = '';
             standings.forEach((stat, index) => {
                 const rank = index + 1;
                 const row = document.createElement('tr');
                 row.className = 'border-b border-gray-800 last:border-b-0 table-row-hover';
-                row.innerHTML = `<td class="p-4 w-16 text-center">${getRankHTML(rank)}</td><td class="p-4 text-lg font-bold text-white">${stat.player}</td><td class="p-4 text-lg font-extrabold text-blue-400">${stat.score}</td>`;
-                individualStandingsBody.appendChild(row);
+                const name = type === 'team' ? stat.name : stat.player;
+                row.innerHTML = `<td class="p-4 w-16 text-center">${getRankHTML(rank)}</td><td class="p-4 text-lg font-bold text-white">${name}</td><td class="p-4 text-lg font-extrabold text-blue-400">${stat.score}</td>`;
+                body.appendChild(row);
             });
         }
         
-        function renderTeamAdminPanel() {
-            if (!tournamentData) return;
-            const formContainer = adminForms.team;
-            const standings = tournamentData.teamTournament.standings;
+        function renderAdminPanel() {
+            renderParticipantManagement();
+            renderScoreUpdater('team');
+            renderScoreUpdater('individual');
+        }
+
+        function renderParticipantManagement() {
+            participantManagementContainer.innerHTML = `
+                <h3 class="text-xl font-bold text-white border-b border-gray-600 pb-2 mb-4 font-orbitron">Manage Participants</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                        <h4 class="text-lg font-semibold text-white mb-3">Players</h4>
+                        <div class="flex gap-2 mb-4">
+                            <input type="text" id="new-player-name" placeholder="New Player Name" class="w-full bg-gray-700 rounded p-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <button id="add-player-btn" class="btn-primary text-white font-bold py-2 px-4 rounded-lg">Add</button>
+                        </div>
+                        <ul id="player-list" class="space-y-2"></ul>
+                    </div>
+                    <div>
+                        <h4 class="text-lg font-semibold text-white mb-3">Teams</h4>
+                        <div class="flex gap-2 mb-4">
+                            <input type="text" id="new-team-name" placeholder="New Team Name" class="w-full bg-gray-700 rounded p-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <button id="add-team-btn" class="btn-primary text-white font-bold py-2 px-4 rounded-lg">Add</button>
+                        </div>
+                        <ul id="team-list" class="space-y-2"></ul>
+                    </div>
+                </div>
+            `;
+            
+            const playerList = document.getElementById('player-list');
+            tournamentData.individualTournament.standings.forEach(p => {
+                playerList.innerHTML += `<li class="flex justify-between items-center bg-gray-700 p-2 rounded"><span>${p.player}</span><button class="remove-player-btn text-red-400 hover:text-red-300" data-player="${p.player}">Remove</button></li>`;
+            });
+
+            const teamList = document.getElementById('team-list');
+            tournamentData.teamTournament.standings.forEach(t => {
+                teamList.innerHTML += `<li class="flex justify-between items-center bg-gray-700 p-2 rounded"><span>${t.name}</span><button class="remove-team-btn text-red-400 hover:text-red-300" data-team="${t.name}">Remove</button></li>`;
+            });
+
+            document.getElementById('add-player-btn').addEventListener('click', addPlayer);
+            document.getElementById('add-team-btn').addEventListener('click', addTeam);
+            document.querySelectorAll('.remove-player-btn').forEach(btn => btn.addEventListener('click', (e) => removeParticipant('individual', e.target.dataset.player)));
+            document.querySelectorAll('.remove-team-btn').forEach(btn => btn.addEventListener('click', (e) => removeParticipant('team', e.target.dataset.team)));
+        }
+
+        function renderScoreUpdater(type) {
+            const formContainer = adminForms[type];
+            const standings = tournamentData[`${type}Tournament`].standings;
             formContainer.innerHTML = '';
-            standings.forEach((stat, teamIndex) => {
+            standings.forEach((stat, index) => {
+                const name = type === 'team' ? stat.name : stat.player;
                 const formDiv = document.createElement('div');
                 formDiv.className = "grid grid-cols-2 items-center gap-4";
-                formDiv.innerHTML = `<div class="text-lg font-semibold text-white">${stat.name}</div><div class="text-center"><label class="text-sm text-gray-400">Score</label><input type="number" value="${stat.score}" class="team-stat-input w-full bg-gray-700 rounded p-2 text-center" data-team-index="${teamIndex}"></div>`;
+                formDiv.innerHTML = `<div class="text-lg font-semibold text-white">${name}</div><div class="text-center"><label class="text-sm text-gray-400">Score</label><input type="number" value="${stat.score}" class="score-input w-full bg-gray-700 rounded p-2 text-center" data-type="${type}" data-index="${index}"></div>`;
                 formContainer.appendChild(formDiv);
             });
         }
 
-        function renderIndividualAdminPanel() {
-            if (!tournamentData) return;
-            const formContainer = adminForms.individual;
-            const standings = tournamentData.individualTournament.standings;
-            formContainer.innerHTML = '';
-            standings.forEach((stat, playerIndex) => {
-                const formDiv = document.createElement('div');
-                formDiv.className = "grid grid-cols-2 items-center gap-4";
-                formDiv.innerHTML = `<div class="text-lg font-semibold text-white">${stat.player}</div><div class="text-center"><label class="text-sm text-gray-400">Score</label><input type="number" value="${stat.score}" class="stat-input w-full bg-gray-700 rounded p-2 text-center" data-player-index="${playerIndex}"></div>`;
-                formContainer.appendChild(formDiv);
-            });
+        async function addPlayer() {
+            const input = document.getElementById('new-player-name');
+            const name = input.value.trim();
+            if (name && !tournamentData.individualTournament.standings.some(p => p.player === name)) {
+                tournamentData.individualTournament.standings.push({ player: name, score: 0 });
+                await setDoc(tournamentDocRef, tournamentData);
+                input.value = '';
+            }
+        }
+
+        async function addTeam() {
+            const input = document.getElementById('new-team-name');
+            const name = input.value.trim();
+            if (name && !tournamentData.teamTournament.standings.some(t => t.name === name)) {
+                tournamentData.teamTournament.standings.push({ name: name, score: 0 });
+                await setDoc(tournamentDocRef, tournamentData);
+                input.value = '';
+            }
+        }
+
+        async function removeParticipant(type, name) {
+            if (type === 'individual') {
+                tournamentData.individualTournament.standings = tournamentData.individualTournament.standings.filter(p => p.player !== name);
+            } else {
+                tournamentData.teamTournament.standings = tournamentData.teamTournament.standings.filter(t => t.name !== name);
+            }
+            await setDoc(tournamentDocRef, tournamentData);
         }
 
         async function updateAndSave() {
-            const newTeamStandings = tournamentData.teamTournament.standings.map((team, index) => {
-                const input = document.querySelector(`.team-stat-input[data-team-index="${index}"]`);
-                return { ...team, score: parseInt(input.value) || 0 };
+            document.querySelectorAll('.score-input').forEach(input => {
+                const { type, index } = input.dataset;
+                tournamentData[`${type}Tournament`].standings[index].score = parseInt(input.value) || 0;
             });
-
-            const newIndividualStandings = tournamentData.individualTournament.standings.map((player, index) => {
-                const input = document.querySelector(`.stat-input[data-player-index="${index}"]`);
-                return { ...player, score: parseInt(input.value) || 0 };
-            });
-
-            const updatedData = {
-                ...tournamentData,
-                teamTournament: { standings: newTeamStandings },
-                individualTournament: { standings: newIndividualStandings }
-            };
-            
-            await setDoc(tournamentDocRef, updatedData);
-            
+            await setDoc(tournamentDocRef, tournamentData);
             saveConfirm.classList.remove('opacity-0');
             setTimeout(() => saveConfirm.classList.add('opacity-0'), 2000);
         }
 
         async function resetData() {
-            if (window.confirm("Are you sure you want to reset ALL scores and team data? This will affect everyone.")) {
+            if (window.confirm("Are you sure you want to reset ALL tournament data (scores and participants)? This will affect everyone.")) {
                 await setDoc(tournamentDocRef, initialTournamentData);
                 isAdminAuthenticated = false;
                 switchTab('team-standings');
             }
-        }
-
-        function renderAll() {
-            renderTeamStandings();
-            renderIndividualStandings();
-            renderTeamAdminPanel();
-            renderIndividualAdminPanel();
         }
 
         function switchTab(tabId) {
@@ -377,12 +395,10 @@
         updateButton.addEventListener('click', updateAndSave);
         resetButton.addEventListener('click', resetData);
 
-        // --- Initial Load and Real-time Listener ---
         onSnapshot(tournamentDocRef, (doc) => {
-            if (doc.exists()) {
+            if (doc.exists() && doc.data().teamTournament) {
                 tournamentData = doc.data();
             } else {
-                // If no data, create it with initial data
                 setDoc(tournamentDocRef, initialTournamentData);
                 tournamentData = initialTournamentData;
             }
